@@ -23,8 +23,8 @@
 
     - name: Download and Install Nerd Fonts
       shell: >
-        curl -fLO https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/DroidSansMono/{{ font_name }} -o /tmp
-        && mv /tmp/*.otf ~/.local/share/fonts/
+        curl -ssL https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/DroidSansMono/{{ font_name }} -o /tmp/{{ font_name }}
+        && mv /tmp/{{ font_name }} ~/.local/share/fonts/
       args:
         creates: "{{ home }}/.local/share/fonts/{{ font_name }}"
 
