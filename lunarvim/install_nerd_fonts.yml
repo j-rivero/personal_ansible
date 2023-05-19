@@ -33,3 +33,7 @@
         path: "{{ home }}/.local/share/fonts/{{ font_name }}"
         state: file
         mode: '0755'
+
+    - name: Regenerate font cache
+      shell: fc-cache -f
+
