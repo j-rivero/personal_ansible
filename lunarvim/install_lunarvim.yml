@@ -1,0 +1,59 @@
+---
+- name: Install LunarVim and recommended Neovim version
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Retrieve latest LunarVim release
+      uri:
+        url: https://api.github.com/repos/ChristianChiarulli/LunarVim/releases/latest
+        return_content: true
+        timeout: 5
+      register: lunarvim_release
+
+    - name: Extract LunarVim release version
+      set_fact:
+        lunarvim_version: "{{ lunarvim_release.json.tag_name }}"
+
+    - name: Extract LunarVim branch name
+      set_fact:
+        lunarvim_branch: "{{ lunarvim_release.json.target_commitish }}"
+
+    - name: Extract Neovim version from LunarVim branch name
+      set_fact:
+        neovim_version: "{{ lunarvim_branch.split('/')[-1].split('-')[-1] }}"
+
+    - name: Check if Neovim is installed
+      command: "which nvim"
+      register: neovim_path
+      changed_when: false
+      failed_when: false
+
+    - name: Get installed Neovim version
+      command: "nvim --version | awk 'NR==1{print substr($2, 1, 3)}'"
+      changed_when: false
+      register: installed_neovim_version
+      when: neovim_path.stdout is not none
+
+    - name: Install Neovim package
+      snap:
+        name: nvim
+        state: present
+        classic: true
+        channel: stable
+      when: neovim_path.stdout is none or (installed_neovim_version is defined and installed_neovim_version.stdout != neovim_version)
+
+    - name: Install Cargo package
+      package:
+        name: cargo
+        state: present
+      when: neovim_path.stdout is not none
+
+    - name: Set up LunarVim
+      shell: |
+        curl -s https://raw.githubusercontent.com/ChristianChiarulli/LunarVim/{{ lunarvim_branch }}/utils/installer/install.sh |  LV_BRANCH={{ lunarvim_branch }} bash -s -- --install-dependencies -y
+      args:
+        executable: /bin/bash
+      when: neovim_path.stdout is not none
