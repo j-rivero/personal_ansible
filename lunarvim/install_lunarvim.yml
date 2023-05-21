@@ -50,7 +50,6 @@
       package:
         name: cargo
         state: present
-      when: installed_neovim_version
 
     - name: Set up LunarVim
       shell: |
@@ -58,21 +57,29 @@
       args:
         executable: /bin/bash
       register: install_lvim
-      when: installed_neovim_version
       # Workaround on the problem https://github.com/LunarVim/LunarVim/issues/3612
       failed_when: false
 
     - name: check if lvim was installed but problem failed because 3612
-      command: "which lvim"
-      register: lvim_path
+      command: "lvim --version"
+      register: lvim_version
       changed_when: false
       failed_when: false
 
     - name: really failed installation
+      ansible.builtin.debug:
+        var: lvim_version.rc
       ansible.builtin.fail:
         msg: The lvim installation failed
-      when: lvim_path.rc != 0
+      when: lvim_version.rc != 0
 
     - name: patch 3612 bug
       command: sed -i -e 's:^exec.* nvim:nvim:g' /home/jrivero/.local/bin/lvim
-      when: lvim_path.rc == 0
+      when: lvim_version.rc != 0
+
+    - name: Install external linters and tools
+      become: true
+      package:
+        name: ansible-lint shellcheck
+        state: present
+      when: lvim_version.rc == 0

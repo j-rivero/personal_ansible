@@ -36,4 +36,3 @@
 
     - name: Regenerate font cache
       shell: fc-cache -f
-
