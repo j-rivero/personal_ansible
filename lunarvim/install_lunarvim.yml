@@ -51,6 +51,17 @@
         name: cargo
         state: present
 
+    - name: Install external linters and tools
+      become: true
+      package:
+        name:
+          - ansible-lint
+          - nodejs
+          - npm
+          - python3-venv
+          - shellcheck
+        state: present
+
     - name: Set up LunarVim
       shell: |
         LV_BRANCH={{ lunarvim_branch }} bash <(curl -s https://raw.githubusercontent.com/ChristianChiarulli/LunarVim/{{ lunarvim_branch }}/utils/installer/install.sh) -s -- --install-dependencies -y
@@ -67,19 +78,10 @@
       failed_when: false
 
     - name: really failed installation
-      ansible.builtin.debug:
-        var: lvim_version.rc
       ansible.builtin.fail:
         msg: The lvim installation failed
-      when: lvim_version.rc != 0
+      when: lvim_version.stderr != "error:" ~" unknown flag `u'"
 
     - name: patch 3612 bug
       command: sed -i -e 's:^exec.* nvim:nvim:g' /home/jrivero/.local/bin/lvim
-      when: lvim_version.rc != 0
-
-    - name: Install external linters and tools
-      become: true
-      package:
-        name: ansible-lint shellcheck
-        state: present
-      when: lvim_version.rc == 0
+      when: lvim_version.stderr == "error:" ~" unknown flag `u'"
